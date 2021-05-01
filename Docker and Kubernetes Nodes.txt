@@ -1,0 +1,372 @@
+
+-->DOCKER KURULDU 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+IMAGE VE DOCKERFILE: image = Çalışacak uygulamamızın ve uygulamamızın altyapısında çalışan gerekli işletim sistemi kütüphanelerinin bulunduğu bir şablondur.Containerları çalıştırmak için kullanırız.Containerları çalıştırmak için
+gerekli komutları imageların içerisine yazıyoruz ve containerlar bu imagelara göre ayağa kalkar.
+hub.docker-->registry.içerisinde docker imageları bulunur.(nginx)cmd de install ederek kurabiliriz.nginx web dosyası olduğu için html kodlarını nereye atacağımızı da söylemektedir.
+
+nginx'i kendi pc mize çekmek::
+docker images-->bulunan imageları verir
+docker pull nginx --->nginx imageını çekiyoruz
+docker images-->yaparak nginx'i görebiliriz.
+
+Dockerfile yazalım::
+touch Dockerfile--->Dockerfile dosyası oluştur
+ls--->gör
+nano Dockerfile--->Dockerfile dosyasının içerisine gir
+FROM nginx
+                  ---->nginx imageını kullan ve dışarıya 80 portunu aç.KAYDET
+EXPOSE 80
+
+docker build -t docker-kursu-nginx:1.0 .     --->build edildi
+docker images--->docker-kursu-nginx + nginx
+
+nano Dockerfile
+FROM nginx
+COPY docker-kursu.txt /
+EXPOSE 80
+
+touch docker-kursu.txt
+docker build -t docker-kursu-nginx:1.1 .--->bu imageın tek farkı içindi bizim bir de dosyamız var.
+docker images--->nginx + docker-kursu-nginx 1.0 + docker-kursu-nginx 1.1  
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CONTAINER RUN : Containerları çalıştıracağız.
+
+docker images
+docker run -p 8080:80 nginx--->-p Containerın üzerinde çalıştığı dışarıya yayın yaptığı port ile kendi host makine portunu birbirne bağlıyor.8080 kendi host 80 containerın 80.portu  nginx kullanacağı container
+Browser-->localhost:8080--->çalıştı
+
+docker ps--->Çalışan containerları listeler.
+
+docker images
+docker run -d -p 8081:80 --name nginx_container nginx  --->nginx_container adlı nginx containerı kullansın 8081 portlu 80 i kullansın
+docker ps ---> nginx_container + 8080(önceki)
+Browser->localhost:8081-->(yine container ayağa kalkmış çalışıyor)
+
+cd ~/Desktop/docker/
+ls -l--->Dockerfile + docker-kursu.txt
+nano Dockerfile
+	FROM nginx
+	COPY index.html /usr/share/nginx/html/--->GÜNCELLE VE KAYDET Dockerfile dosyasını
+	EXPOSE 80
+nano index.html--->index.html dosyası oluştur.
+	merhaba docker-->kaydet
+docker build -t nginx-test . --->. demek bu klasörde
+docker images -->nginx-test eklendi
+docker run -p 8082:80 --name nginx-deneme nginx-test--->container oluştur nginx-test i kullan adı nginx-deneme portu 8082:80
+Browser-->localhost:8082--->SONUÇ = merhaba docker--->yazılan index.html containerın içerisine atıldı.
+
+docker images-->nginx-test içerisinde ekstra olarak index.html bulunmaktadır..
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+CONTAINER EXEC-->exec komutu çalışan container üzerinde komut çalıştırmaya yarar.
+docker ps
+docker exec -ti nginx-deneme /bin/bash---->ti container kapanmasını engeller.
+	cd /usr/share/nginx/html/
+	ls -l
+	cat index.html-->merhaba docker
+	echo "UYGULAMALI K8S EGITIMI">index.html
+Browser:localhost:8082--->merhaba docker yazısı yerinde UYGULAMALI K8S EGITIMI yazısı çıkar.
+
+Çalışan container üzerinde değişiklik yaptık.Bu container öldüğü zaman içinde yapılan değişiklikler görülmez.İlk hali ile karşılaşırız.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+DOCKER VOLUME:Container içerisinde bir path i host makinesi üzerindeki pathe maplemeyi sağlar.
+
+nano Dockerfile
+	FROM nginx
+	COPY index.html /usr/share/nginx/html/
+	VOLUME /usr/share/nginx/html/
+	EXPOSE 80
+docker build -t myapp . --->build ettik 
+docker images-->+my app eklendi 
+docker run -d -p 8081:80 --name project myapp--->myapp kullanıldı container adı:project 
+docker exec -ti project bash--->containerın içerisine girdik
+cd /usr/share/nginx/html/
+Browser:localhost:8081 --> merhaba docker
+echo "UYGULAMALI K8S EGITIMI"
+Browserdan baktım -->değişti
+
+			DOCKER KISMI
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+DOCKER ile WORDPRESS UYGULAMASI...
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+KUBERNETES NEDİR?
+Containerlarımızı çalıştıran ve tek bir noktadan yönetmemizi sağlayan container orchestration sağlar.
+
+ETCD:hızlı güvenilir ve dağıtık mimari tabanlı bir key-value deposudur.Veriler key-value biçiminde bir database de saklanır.
+
+KUBE API SERVER:API sunucusu REST işlemlerine hizmet eder.Kube api server bizim kubernetese verdiğimiz komutları karşılar,önce bu isteğin kimliğini doğrular.Eğer bu işlemleri geçerse Etcd den bize yanıt döner ve komut çalışır.İşlem 
+sonunda etcd güncellenir.Aynı şekilde kubernetesin diğer bileşenlerinin de aksiyon almasında cluster içindeki işlerde de iletişimi sağlayıp tüm yönetim aslında kube api server üzerinden ilerler.
+
+KUBE SCHEDULAR:Kube schedular api server üzerinde bir podun ayağa kalkması gerektiğinde bu podun hangi node üzerinde ayağa kalkması gerektiğine karar verir.Bu kararları verirken kriterlere göre puanlar:
+1-Hardware/software kapasiteleri ve kısıtlamaları
+2-Affinity
+3-Anti affinity
+4-Node başına düşen iş yoğunluğu
+5-Datanın konumu
+
+KUBELET:Kubelet kubernetes nodeları üzerinde bir agenttır.API serverdan gelen isteğe göre podları ayağa kaldırır ve bu podların durumlarını API Server'a rapor eder.
+
+KUBE-PROXY:Nodelar üzerindeki network haberleşmesini sağlar.
+
+KUBE CONTROL MANAGER:Clusterımızın durumuyla ilgili sürekli api-server aracılığıyla izleyerek bulunduğu durumu olması gereken duruma getirmeye çalışan bir bileşendir.
+	Node Controller:Nodelarda bir çökme meydana geldiğinde bunu fark eder ve bilgi verir.
+	Replication Controller:Clusterımızda podların replicalarını olması gerektiği sayıda tutulmasını kontrol eder.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+POD:Containerlarımız podların içerisinde çalışır.Bir pod içinde birden fazla container bulunabilir.Bir podun içinde containerlar localhost ile birbirlerine erişim sağlarlar.
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: static-web
+  labels:
+	role: myrole
+spec:
+  containers:
+    -   name: web
+	image: nginx
+        ports:
+          -  name: web
+	     containerPort: 80
+ 	     protocol:TCP	
+
+
+pod oluşturulmak istendiğinde yaml dosyasını kubernetese verdiğimiz zaman içerisinde nginx bulunan bir containerı bir pod oluşturarak çalıştırmış oluruz.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+DEPLOYMENT:Bir uygulamamızın replicaları,environment değişkenleri,volume pathleri gibi tanımlamaları bir kez ayarladığımız ve kubernetese uygulamamızı deploy etmemizi sağlayan objedir.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: nginx-deployment
+    labels:
+         app:nginx
+spec:
+    replicas: 3
+    selector:
+         matchLabels:
+            app:nginx
+    template:
+        metadata:
+            labels:
+                app:nginx
+        spec:
+            containers:
+            -    name:nginx
+                 image:nginx:1.14.2
+		 ports:
+                 -   containerPort:80
+
+
+YANİ -->Bizim uygulamamızı kubernetes tarafında nasıl ayağa kalkması gerektiğini ayarladığımız bir obje.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+KUBERNETES SERVICE:kUBERNETES clusterında overlay network denilen bir cluster içi network vardır.Her podun cluster içinde ip si vardır.Bu ipler ie biz podlarımıza başka bir poddan veya dışarıdan erişebiliriz
+Bu yöntem çok tercih edilmez.Service objeleri ile podlarımızın içindeki containerlara düşeriz.Ayrıca aynı pod içinde olan containerlar da localhost üzerinden birbirleriyle haberleşebilir.Servis nesneleri de 
+labellar la kube-dns sayesinde podlarla kolayca bağ kurarlar.
+
+Servis Tipleri:
+1-NodePort:Dışarıya bir node üzerinde bir port açarak podlarımıza dışarıdan erişim sağlar.Default olarak bir node 30.000 ile 32.767 arasında bir port numarası alır.
+2-ClusterIP:Cluster içindeki erişim için kullanılan service tipidir.Dışarıdan direkt olarak erişim yoktur,Kube Proxy ile erişim sağlanır.
+3-LoadBalancer:Servislerin dışarıdan ip alarak erişilmesini sağlar.Nodeport servis tipindeki servislerinizin önünde ip ile erişilebilir olur ve daha sonra trafiği Nodeport servislerine ileterek uygulamaya erişim sağlar.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INGRESS:Bir service tipi değildir,bir objedir.Temelde reverse proxy gibi çalışır ve trafiği servicelere yönlendirir.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Minikube Kurulumu:
+kubectl
+kubectl version
+
+install minikube	
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Namespace-kubectl get-kubectl describe?
+
+kubectl get node--->nodeların kubectl komutuyla listelenmesini sağlar.
+
+kubectl get ns -->kubernetes clusterındaki namespaceleri listeler.(ns-->namespaces)
+
+kubectl get pod--->podları listele-->hangi ns?--->kubectl get pod -n kube-system--->kube-system namespacei altındaki podları versin dedik
+
+kubectl get pod -n kube-system -o wide--->daha ayrıntılı bilgi ekranı
+
+kubectl describe pod PODADI(coredns-f9fd979d6-cpgqw) -n kube-system---->Pod adı girilerek pod detayı alındı.
+
+kubectl get deploy -n kube-system--->kube-system içindeki deploy nesnelerini görmek istiyorum.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+kubectl create/delete/apply?
+
+kubectl get ns
+
+kubectl create ns devops---->devops isimli bir namespace oluşturduk.
+
+kubectl get ns--->+devops namespacei eklendi.
+
+kubectl delete ns devops---->namespace silmek
+
+2.YÖNTEM:DOSYA-----
+
+nano devopsNs.yml
+	apiVersion: v1
+	kind:Namespace
+	metadata:
+	    name:devops
+
+kubectl apply -f devopsNs.yml---->devops created
+
+kubectl get ns--->+devops
+
+kubectl run my-pod --image=nginx:latest -port=80 -n devops--->devops un altında yeni pod oluşturduk.
+
+kubectl get pod -n devops---->podu böyle görebiliriz
+
+kubectl delete pod my-pod -n devops--->pod silmek.
+
+kubectl get pod -n devops -o wide----->ekrana yazdırma kodu...pod silindi görüntülenemez.
+
+nano my-pod.yml--->pod oluşturuyoruz adı my-pod
+	apiVersion: v1
+	kind:Pod
+	metadata:
+	    name:my-pod
+	    namespace: devops	
+	    labels:
+		app:my-app---->etiketi my-app
+spec:
+   containers:
+   -    name:nginx
+	image: nginx:latest
+	imagePullPolicy: Always/IfNotPresent--->her zaman çeksin
+
+kubectl apply -f my-pod.yml---->podumuzu oluşturduk(create)
+
+kubectl get pod -n devops--->my-pod görüntülenecek.
+
+kubectl describe pod my-pod -n devops--->ayrıntılı bak.
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Deployment create/apply?
+
+kubectl create deployment my-deploy --image=nginx:latest --replicas=3 --port=80 -n devops--->deployment oluştur adı my-deploy image=nginx kopya 3 portu 80 ve devopsa bağlı deployment olsun.
+
+kubectl get deployment -n devops--->devops un altındaki deploymentları ver.
+
+kubectl get pod -n devops--->devops altındaki podları versin.
+
+
+
+kubectl delete pod my-deploy PODADI(-6fcdf7cd96-8kd4x) -n devops--->devops un altındaki ... isimli podu sil.--->pod ölür yeni pod kalkar.
+
+kubectl delete deploy my-deploy -n devops--->deploymentı sildik.
+
+
+
+nano nginx-deploy.yaml------>Deployment nesnesi oluştur......
+	apiVersion:apps/v1
+	kind:Deployment
+	metadata:
+	   name:nginx-deploy
+	   namespace:devops
+	spec:
+	   selector:
+               matchLabels:
+                  app:nginx
+           replicas:2
+	   template:
+               metadata:
+                  labels:
+                      app:nginx
+               spec:
+                  containers:
+                  -   name:nginx
+                      image: nginx:1.16.1
+		      imagePullPolicy: IfNotPresent	
+                      ports:
+                      -  containerPort: 80
+
+kubectl apply -f nginx-deploy.yaml
+
+kubectl get deploy -n devops
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Kubernetes Dashboard?
+minikube dashboard ---->açılan alanlara bak default vs. devops namespace ini de bulabiliriz..
+Deployments kısmında oluşturduğumuz deploy nesnesi olabilir.
+Pods kısmından podlar görünür.
+Deployments 3 nokta scale e basarak kodla yaptığımız arttırma azaltma işlemlerini arayüz ile de yapabiliriz.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------S
+
+
+Servis tipleri ve ingress uygulaması?
+minikube start
+minikube addons list-->nitelikler görünecek-->ingress ve metallb enabled edilecek
+minikube addons enable metallb
+minikube addons enable ingress
+minikube dashboard
+
+--------------------------------
+IP ÖĞRENME : kubectl cluster-info
+
+172.19.118.144: +Nodeport(32055)
+
+172.19.118.144:32055
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,32 @@
+First install minikube 
+After that install kubectl
+Go to cmd for admin mode
+
+	minikube
+	minikube start 
+	
+Look at the dashboard
+	
+	minikube dashboard
+
+After that .yaml files upload for the project
+
+	kubectl apply -f ./ -n wp 
+
+*wp = namespace name
+
+And again look at the dashboard
+
+	minikube dashboard
+
+How to work?
+
+Go to the Services look at the NodePort : .....
+
+Copy NodePort number.
+
+Browser
+	
+	yourclusterip : NodePortNumber
+
+Wow!
